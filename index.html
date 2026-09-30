@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>  
+  <script>
+    const urlParams = new URLSearchParams(window.location.search); 
+      const subDomain = urlParams.get("sbu"); 
+      const supabaseAnonKey = urlParams.get("sba");
+      const roomId = urlParams.get("r");  
+      const currentUser = urlParams.get("u"); 
+
+      if (!subDomain && !supabaseAnonKey && !roomId && !targetUser) {
+        window.location.href = "https://example.com";
+      } 
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obrolan</title> 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script> 
+  <style>
+    html, body { max-width: 100%; overflow-x: hidden;}
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;}
+    body { background-color: #d1d7db; color: #111b21; height: 100vh; display: flex; justify-content: center; align-items: center;}
+    .chat-container { width: 100%; max-width: 900px; height: 100dvh; background-color: #efeae2; display: flex; flex-direction: column; position: relative; box-shadow: 0 6px 18px rgba(11,20,26,0.05);}
+    .chat-header { background-color: #f0f2f5; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e9edef;}
+    .chat-header h4 {  color: #485055;}
+    .chat-header p { font-size: 12px; color: #667781;}
+    .chat-box { flex: 1; overflow-y: auto; padding: 20px; background-color: #efeae2; background-image: radial-gradient(#cbd5e1 1px, transparent 0); background-size: 24px 24px; display: flex; flex-direction: column; gap: 8px;}
+    .message { max-width: 65%; padding: 6px 10px; border-radius: 8px; font-size: 14.2px; position: relative; word-wrap: break-word; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13);}
+    .message.sent { align-self: flex-end; background-color: #d9fdd3; color: #111b21; border-top-right-radius: 0;}
+    .message.received { align-self: flex-start; background-color: #ffffff; color: #111b21; border-top-left-radius: 0;}
+    .message-user { font-size: 11px; font-weight: bold; color: #008069;}
+    .message.sent .message-user { color: #128c7e;}
+    .reply-context { background-color: rgba(0, 0, 0, 0.05); border-left: 4px solid #00a884; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px;}
+    .reply-context .reply-user { font-weight: bold; color: #008069;}
+    .message-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 2px;}
+    .message-time { font-size: 10px; color: #667781;}
+    .action-btn { background: none; border: none; color: #667781; cursor: pointer; font-size: 11px;}
+    .action-btn:hover { color: #111b21;}
+    .action-btn.delete:hover { color: #ea0038;}
+    .reply-preview { background-color: #f0f2f5; padding: 8px 16px; display: none; justify-content: space-between; align-items: center; border-left: 4px solid #00a884; font-size: 13px;}
+    .reply-preview.active { display: flex;}
+    .reply-preview-close { cursor: pointer; color: #667781; font-size: 16px;}
+    .chat-input-container { background-color: #f0f2f5; padding: 10px 5px; display: flex; align-items: center; gap: 5px;}
+    .chat-input-container input { flex: 1; background-color: #ffffff; border: none; padding: 10px; border-radius: 8px; color: #111b21;  outline: none; min-width: 0; } 
+    .chat-input-container button { border: none; background: none; cursor: pointer; padding: 4px; display: flex; align-items: center; flex-shrink: 0;}
+    .chat-input-container button#send-btn { background-color: #00a884; width: 50px; height: 40px; border-radius: 20px;  justify-content: center; padding: 0; flex-shrink: 0; }
+    .error-screen { display: none; text-align: center; padding: 20px; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+    .header-profile { display: flex; align-items: center; gap: 12px;}
+    .profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background-color: #cbd5e1;}
+    .profile-info h3 { font-size: 16px; color: #111b21;} 
+    .profile-details { display: flex; align-items: center; gap: 6px;}
+    .profile-details svg { width: 12px; height: 12px; fill: #667781; display: inline-block; vertical-align: middle;}
+    .profile-info p { font-size: 12px; color: #667781;} 
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
+    .rotating-svg { animation: spin 1s linear infinite; width: 16px; height: 16px; fill: #667781; display: inline-block; vertical-align: middle;}
+    .chat-loader { display: flex; justify-content: center; align-items: center; height: 100%;}
+    .chat-loader svg { width: 40px; height: 40px; fill: #485055;}
+  </style>
+</head>
+<body> 
+
+  <div id="error-screen" class="error-screen">
+    <h2 style="color: #ea0038; margin-bottom: 10px;">Error</h2>
+    <p id="error-message" style="color: #667781;"></p>
+  </div>
+
+  <div id="app" class="chat-container"> 
+    <div class="chat-header">
+        <div class="header-profile">
+            <img id="profile-img" class="profile-pic">
+            <div class="profile-info">
+                <h4 id="room-display"></h4>
+                <div class="profile-details">
+                    <p id="user-display"></p>
+                    <div id="user-logs-container" style="font-size: 11px; color: #667781; display: flex; align-items: center; gap: 6px;">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div id="reply-preview" class="reply-preview">
+      <div>
+        <span style="color: #00a884; font-weight: bold;" id="reply-user">User</span>
+        <div id="reply-text" style="color: #667781;">Pesan...</div>
+      </div>
+      <span class="reply-preview-close" onclick="cancelReply()">✕</span>
+    </div>
+
+    <form id="chat-form" class="chat-input-container"> 
+      <input type="file" id="media-input" accept="image/*,video/*" style="display: none;"> 
+      <button type="button" id="attach-btn" title="Kirim Gambar/Video" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center;">
+        <svg style="width: 20px; height: 20px; fill: #54656f;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M160 144C151.2 144 144 151.2 144 160L144 480C144 488.8 151.2 496 160 496L480 496C488.8 496 496 488.8 496 480L496 160C496 151.2 488.8 144 480 144L160 144zM96 160C96 124.7 124.7 96 160 96L480 96C515.3 96 544 124.7 544 160L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 160zM224 192C241.7 192 256 206.3 256 224C256 241.7 241.7 256 224 256C206.3 256 192 241.7 192 224C192 206.3 206.3 192 224 192zM360 264C368.5 264 376.4 268.5 380.7 275.8L460.7 411.8C465.1 419.2 465.1 428.4 460.8 435.9C456.5 443.4 448.6 448 440 448L200 448C191.1 448 182.8 443 178.7 435.1C174.6 427.2 175.2 417.6 180.3 410.3L236.3 330.3C240.8 323.9 248.1 320.1 256 320.1C263.9 320.1 271.2 323.9 275.7 330.3L292.9 354.9L339.4 275.9C343.7 268.6 351.6 264.1 360.1 264.1z"/></svg>
+      </button> 
+      <button type="button" id="record-btn" title="Rekam Suara" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center;">
+        <svg id="record-icon" style="width: 20px; height: 20px; fill: #54656f;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M224 160C224 107 267 64 320 64C370.3 64 411.6 102.7 415.7 152L360 152C346.7 152 336 162.7 336 176C336 189.3 346.7 200 360 200L416 200L416 248L360 248C346.7 248 336 258.7 336 272C336 285.3 346.7 296 360 296L415.7 296C411.6 345.3 370.4 384 320 384C267 384 224 341 224 288L224 160zM152 224C165.3 224 176 234.7 176 248L176 288C176 367.5 240.5 432 320 432C399.5 432 464 367.5 464 288L464 248C464 234.7 474.7 224 488 224C501.3 224 512 234.7 512 248L512 288C512 385.9 438.7 466.7 344 478.5L344 528L392 528C405.3 528 416 538.7 416 552C416 565.3 405.3 576 392 576L248 576C234.7 576 224 565.3 224 552C224 538.7 234.7 528 248 528L296 528L296 478.5C201.3 466.7 128 385.9 128 288L128 248C128 234.7 138.7 224 152 224z"/></svg>
+      </button>
+
+      <input type="text" id="message-input" placeholder="Ketik pesan" autocomplete="off">
+ 
+      <button type="submit" id="send-btn" >
+        <svg style="width: 15px; height: 15px; fill: #ffffff;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M568.4 37.7C578.2 34.2 589 36.7 596.4 44C603.8 51.3 606.2 62.2 602.7 72L424.7 568.9C419.7 582.8 406.6 592 391.9 592C377.7 592 364.9 583.4 359.6 570.3L295.4 412.3C290.9 401.3 292.9 388.7 300.6 379.7L395.1 267.3C400.2 261.2 399.8 252.3 394.2 246.7C388.6 241.1 379.6 240.7 373.6 245.8L261.2 340.1C252.1 347.7 239.6 349.7 228.6 345.3L70.1 280.8C57 275.5 48.4 262.7 48.4 248.5C48.4 233.8 57.6 220.7 71.5 215.7L568.4 37.7z"/></svg>
+      </button>
+
+    </form>
+  </div>
+
+  <script>
+    const SUPABASE_URL = `https://${subDomain}.supabase.co`;
+    const SUPABASE_ANON_KEY = supabaseAnonKey; 
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);  
+
+    const notifySound = new Audio("notify.mp3");
+      
+    let selectedReplyId = null;
+    let messagesCache = {}; 
+    let oldestMessageTime = null; 
+    let isLoadingMore = false;    
+
+    const app = document.getElementById("app");
+    const errorScreen = document.getElementById("error-screen");
+    const errorMessage = document.getElementById("error-message");
+    const chatBox = document.getElementById("chat-box");
+    const chatForm = document.getElementById("chat-form");
+    const messageInput = document.getElementById("message-input");
+    const roomDisplay = document.getElementById("room-display");
+    const userDisplay = document.getElementById("user-display");
+    const userLogsContainer = document.getElementById("user-logs-container");
+    const replyPreview = document.getElementById("reply-preview");
+    const replyUser = document.getElementById("reply-user");
+    const replyText = document.getElementById("reply-text");
+    const attachBtn = document.getElementById('attach-btn');
+    const mediaInput = document.getElementById('media-input');
+    const recordBtn = document.getElementById('record-btn');
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    
+    let targetName = "default";
+    let profileImgUrl = "default.jpg";
+    
+    if (!currentUser || !roomId) {
+      document.addEventListener("DOMContentLoaded", () => {
+        showError("Akses ditolak: Parameter URL tidak lengkap.");
+      });
+    } 
+    
+    async function detectTarget() {
+      const { data } = await supabaseClient
+        .from("messages")
+        .select("user_name")
+        .eq("room_id", roomId);
+
+      if (data && data.length > 0) {
+        const found = data.find(m => m.user_name !== currentUser);
+        if (found) {
+          targetName = found.user_name;
+          userDisplay.textContent = targetName;
+          
+          if (targetName.length % 2 === 0) {
+            profileImgUrl = 'user2.jpg';
+          } else {
+            profileImgUrl = 'user1.jpg';
+          }
+          
+          document.getElementById('profile-img').src = profileImgUrl;
+        }
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (roomId) {
+        roomDisplay.textContent = `${roomId}`;
+      }
+    }); 
+
+    async function init() {
+      if (!roomId || !currentUser) {
+        showError("Invalid URL");
+        return;
+      } 
+
+      const { data: rooms, error } = await supabaseClient
+        .from("rooms")
+        .select("id")
+        .eq("id", roomId); 
+
+      if (error || !rooms || rooms.length === 0) {
+        showError("Room chat tidak ditemukan atau belum terdaftar di database.");
+        return;
+      } 
+
+      chatBox.innerHTML = `
+        <div class="chat-loader">
+        <svg class="rotating-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M544.1 256L552 256C565.3 256 576 245.3 576 232L576 88C576 78.3 570.2 69.5 561.2 65.8C552.2 62.1 541.9 64.2 535 71L483.3 122.8C439 86.1 382 64 320 64C191 64 84.3 159.4 66.6 283.5C64.1 301 76.2 317.2 93.7 319.7C111.2 322.2 127.4 310 129.9 292.6C143.2 199.5 223.3 128 320 128C364.4 128 405.2 143 437.7 168.3L391 215C384.1 221.9 382.1 232.2 385.8 241.2C389.5 250.2 398.3 256 408 256L544.1 256zM573.5 356.5C576 339 563.8 322.8 546.4 320.3C529 317.8 512.7 330 510.2 347.4C496.9 440.4 416.8 511.9 320.1 511.9C275.7 511.9 234.9 496.9 202.4 471.6L249 425C255.9 418.1 257.9 407.8 254.2 398.8C250.5 389.8 241.7 384 232 384L88 384C74.7 384 64 394.7 64 408L64 552C64 561.7 69.8 570.5 78.8 574.2C87.8 577.9 98.1 575.8 105 569L156.8 517.2C201 553.9 258 576 320 576C449 576 555.7 480.6 573.4 356.5z"/></svg>  
+        </div>
+      `; 
+
+      await detectTarget();
+      await logUserAccess();
+      await fetchMessages();
+      await fetchUserLogs();
+      subscribeRealtime(); 
+
+      chatBox.addEventListener("scroll", () => {
+        if (chatBox.scrollTop === 0) {
+          loadMoreMessages();
+        }
+      });
+    } 
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorScreen.style.display = "block";
+      app.style.display = "none";
+    } 
+
+    async function logUserAccess() {
+      const { error } = await supabaseClient
+        .from("user_logs")
+        .upsert(
+          {
+            room_id: roomId,
+            user_name: currentUser,
+            last_seen: new Date().toISOString()
+          },
+          { onConflict: "room_id, user_name" }
+        );
+
+      if (error) {
+        console.error("Gagal mencatat log user:", error);
+      }
+    }
+
+    async function fetchUserLogs() {
+      const { data, error } = await supabaseClient
+        .from("user_logs")
+        .select("user_name, last_seen")
+        .eq("room_id", roomId);
+
+      if (error) {
+        console.error("Gagal mengambil log user:", error);
+        return;
+      }
+
+      userLogsContainer.innerHTML = "";
+
+      const targetLog = data.find(log => log.user_name === targetName);
+
+      if (targetLog) {
+        const timeStr = formatLastSeen(targetLog.last_seen);
+        userLogsContainer.innerHTML = `
+          <svg style="width: 12px; height: 12px; fill: #667781; display: inline-block; vertical-align: middle;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M528 320C528 434.9 434.9 528 320 528C205.1 528 112 434.9 112 320C112 205.1 205.1 112 320 112C434.9 112 528 205.1 528 320zM64 320C64 461.4 178.6 576 320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320zM296 184L296 320C296 328 300 335.5 306.7 340L402.7 404C413.7 411.4 428.6 408.4 436 397.3C443.4 386.2 440.4 371.4 429.3 364L344 307.2L344 184C344 170.7 333.3 160 320 160C306.7 160 296 170.7 296 184z"/></svg>
+          <span>${timeStr}</span>
+        `;
+      } else {
+        userLogsContainer.innerHTML = `<span>Menunggu...</span>`;
+      }
+    }
+
+    function formatLastSeen(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now - date) / 60000);
+
+      if (diffInMinutes < 1) return "Baru saja";
+      if (diffInMinutes < 60) return `${diffInMinutes} mnt lalu`;
+      
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    async function fetchMessages() {
+      const { data, error } = await supabaseClient
+        .from("messages")
+        .select(`
+          id,
+          room_id,
+          user_name,
+          content,
+          created_at,
+          reply_to_id,
+          file_url,
+          file_type,
+          parent:reply_to_id ( user_name, content )
+        `)
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error("Gagal mengambil pesan:", error);
+        return;
+      }
+
+      data.reverse();
+
+      chatBox.innerHTML = "";
+      messagesCache = {}; 
+      
+      if (data.length > 0) {
+        oldestMessageTime = data[0].created_at; 
+      }
+
+      data.forEach((msg) => {
+        messagesCache[msg.id] = msg; 
+        renderMessage(msg, "bottom");
+      });
+      
+      scrollToBottom();
+    }
+
+    async function loadMoreMessages() {
+      if (isLoadingMore || !oldestMessageTime) return;
+      isLoadingMore = true;
+
+      const previousHeight = chatBox.scrollHeight;
+
+      const { data, error } = await supabaseClient
+        .from("messages")
+        .select(`
+          id,
+          room_id,
+          user_name,
+          content,
+          created_at,
+          reply_to_id,
+          file_url,
+          file_type,
+          parent:reply_to_id ( user_name, content )
+        `)
+        .eq("room_id", roomId)
+        .lt("created_at", oldestMessageTime)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error("Gagal memuat pesan lama:", error);
+        isLoadingMore = false;
+        return;
+      }
+
+      if (data && data.length > 0) {
+        data.reverse();
+        oldestMessageTime = data[0].created_at; 
+
+        data.forEach((msg) => {
+          messagesCache[msg.id] = msg;
+          renderMessage(msg, "top"); 
+        });
+
+        chatBox.scrollTop = chatBox.scrollHeight - previousHeight;
+      }
+
+      isLoadingMore = false;
+    }
+
+    function renderMessage(msg, position = "bottom") {
+      messagesCache[msg.id] = msg; 
+      const isSentByMe = msg.user_name === currentUser;
+      const msgEl = document.createElement("div");
+      msgEl.className = `message ${isSentByMe ? "sent" : "received"}`;
+      msgEl.id = `msg-${msg.id}`;
+
+      const timeStr = new Date(msg.created_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      let replyHTML = "";
+      if (msg.parent) {
+        replyHTML = `
+          <div class="reply-context">
+            <span class="reply-user">${escapeHtml(msg.parent.user_name)}</span>
+            <div>${escapeHtml(msg.parent.content)}</div>
+          </div>
+        `;
+      }
+    
+      let mediaHTML = "";
+      if (msg.file_url) {
+        if (msg.file_type === 'image') {
+          mediaHTML = `<img src="${msg.file_url}" style="max-width: 100%; border-radius: 6px; margin-top: 4px; cursor: pointer;" onclick="window.open('${msg.file_url}', '_blank')">`;
+        } else if (msg.file_type === 'video') {
+          mediaHTML = `<video src="${msg.file_url}" controls style="max-width: 100%; border-radius: 6px; margin-top: 4px;"></video>`;
+        } else if (msg.file_type === 'audio') {
+          mediaHTML = `<audio src="${msg.file_url}" controls style="margin-top: 4px; max-width: 220px;"></audio>`;
+        }
+      }
+
+      let deleteBtn = "";
+      if (isSentByMe) {
+        deleteBtn = `<button class="action-btn delete" onclick="deleteMessage(${msg.id})">Hapus</button>`;
+      }
+
+      msgEl.innerHTML = `
+        <span class="message-user">${escapeHtml(msg.user_name)}</span>
+        ${replyHTML}
+        ${mediaHTML}
+        ${msg.content ? `<div>${escapeHtml(msg.content)}</div>` : ''}
+        <div class="message-footer">
+          <span class="message-time">${timeStr}</span>
+          <button class="action-btn" onclick="triggerReply(${msg.id})">Balas</button>
+          ${deleteBtn}
+        </div>
+      `;
+
+      if (position === "top") {
+        chatBox.insertBefore(msgEl, chatBox.firstChild);
+      } else {
+        chatBox.appendChild(msgEl);
+      }
+    }
+    
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      const payload = {
+        room_id: roomId,
+        user_name: currentUser,
+        content: text,
+        reply_to_id: selectedReplyId,
+      };
+
+      messageInput.value = "";
+      cancelReply();
+
+      const { error } = await supabaseClient.from("messages").insert([payload]);
+
+      if (error) {
+        console.error("Gagal mengirim pesan:", error);
+      } else {
+        await detectTarget();
+        await logUserAccess();
+      }
+    });
+    
+    attachBtn.addEventListener('click', () => {
+      mediaInput.click();
+    });
+
+    mediaInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const isVideo = file.type.startsWith('video');
+      const isImage = file.type.startsWith('image');
+      let fileToUpload = file;
+    
+      if (isImage) {
+        try {
+          const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1280,
+            useWebWorker: true
+          };
+          fileToUpload = await imageCompression(file, options);
+        } catch (error) {
+          console.error('Gagal kompresi gambar, menggunakan file asli:', error);
+        }
+      }
+
+      const fileExt = fileToUpload.name ? fileToUpload.name.split('.').pop() : (isVideo ? 'mp4' : 'jpg');
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('chat-files')
+        .upload(filePath, fileToUpload);
+
+      if (uploadError) {
+        alert('Gagal mengunggah file: ' + uploadError.message);
+        return;
+      }
+
+      const { data: publicURLData } = supabaseClient.storage
+        .from('chat-files')
+        .getPublicUrl(filePath);
+
+      const fileUrl = publicURLData.publicUrl;
+      const fileType = isVideo ? 'video' : (isImage ? 'image' : 'file');
+    
+      await supabaseClient.from("messages").insert([
+        {
+          room_id: roomId,
+          user_name: currentUser,
+          content: "", 
+          file_url: fileUrl,
+          file_type: fileType,
+          reply_to_id: selectedReplyId
+        }
+      ]);
+
+      mediaInput.value = '';
+      cancelReply();
+      await detectTarget();
+      await logUserAccess();
+    });
+    
+    recordBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+
+            const fileName = `voice_${Date.now()}.webm`;
+            const filePath = `uploads/${fileName}`;
+
+            const { error: uploadError } = await supabaseClient.storage
+              .from('chat-files')
+              .upload(filePath, audioFile);
+
+            if (uploadError) {
+              alert('Gagal mengunggah rekaman suara: ' + uploadError.message);
+              return;
+            }
+
+            const { data: publicURLData } = supabaseClient.storage
+              .from('chat-files')
+              .getPublicUrl(filePath);
+
+            await supabaseClient.from("messages").insert([
+              {
+                room_id: roomId,
+                user_name: currentUser,
+                content: "",  
+                file_url: publicURLData.publicUrl,
+                file_type: 'audio',
+                reply_to_id: selectedReplyId
+              }
+            ]);
+
+            cancelReply();
+            await detectTarget();
+            await logUserAccess();
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          document.getElementById('record-icon').style.fill = '#ea0038'; 
+          recordBtn.title = "Berhentikan Rekaman";
+        } catch (err) {
+          alert('Tidak dapat mengakses mikrofon. Pastikan izin browser diaktifkan.');
+          console.error(err);
+        }
+      } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        isRecording = false;
+        document.getElementById('record-icon').style.fill = '#54656f'; 
+        recordBtn.title = "Rekam Suara";
+      }
+    });
+
+    async function deleteMessage(msgId) {
+      const { error } = await supabaseClient
+        .from("messages")
+        .delete()
+        .eq("id", msgId)
+        .eq("user_name", currentUser);
+
+      if (error) {
+        console.error("Gagal menghapus pesan:", error);
+      }
+    }
+
+    function triggerReply(id) {
+      const msg = messagesCache[id];
+      if (!msg) return;
+      
+      selectedReplyId = id;
+      replyUser.textContent = msg.user_name;
+      replyText.textContent = msg.content;
+      replyPreview.classList.add("active");
+      messageInput.focus();
+    }
+
+    function cancelReply() {
+      selectedReplyId = null;
+      replyPreview.classList.remove("active");
+    }
+
+    function subscribeRealtime() {
+      supabaseClient
+        .channel(`room_realtime_${roomId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `room_id=eq.${roomId}`,
+          },
+          async (payload) => {
+            if (payload.new.user_name !== currentUser) {
+              notifySound.currentTime = 0;
+              notifySound.play().catch(err => console.log("Gagal memutar audio:", err));
+            }
+    
+            await detectTarget();
+
+            if (payload.new.reply_to_id) {
+              const { data: fullMsg } = await supabaseClient
+                .from("messages")
+                .select(`
+                  id,
+                  room_id,
+                  user_name,
+                  content,
+                  created_at,
+                  reply_to_id,
+                  file_url,
+                  file_type,
+                  parent:reply_to_id ( user_name, content )
+                `)
+                .eq("id", payload.new.id)
+                .single();
+
+              if (fullMsg) {
+                renderMessage(fullMsg, "bottom");
+              } else {
+                renderMessage(payload.new, "bottom");
+              }
+            } else {
+              renderMessage(payload.new, "bottom");
+            }
+
+            scrollToBottom();
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "messages",
+          },
+          (payload) => {
+            const deletedEl = document.getElementById(`msg-${payload.old.id}`);
+            if (deletedEl) deletedEl.remove();
+            delete messagesCache[payload.old.id];
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "user_logs",
+            filter: `room_id=eq.${roomId}`,
+          },
+          async () => {
+            await fetchUserLogs();
+          }
+        )
+        .subscribe();
+    }
+
+    function scrollToBottom() {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    init();
+  </script>
+</body>
+</html>
