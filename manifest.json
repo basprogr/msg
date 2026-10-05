@@ -1,0 +1,20 @@
+{
+  "name": "Link",
+  "short_name": "Link",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#efeae2",
+  "theme_color": "#00a884",
+  "icons": [
+    {
+      "src": "./img/logo192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpg"
+    },
+    {
+      "src": "./img/logo512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpg"
+    }
+  ]
+}
