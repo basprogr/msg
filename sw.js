@@ -1,6 +1,5 @@
 const CACHE_NAME = 'link-pwa';
-
-// Mendeteksi base path secara otomatis (mendukung /link-apk di localhost maupun GitHub Pages)
+ 
 const getBasePath = () => {
   const pathname = self.location.pathname;
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -23,8 +22,7 @@ const BASE = getBasePath();
 const ASSETS_TO_CACHE = [
   `${BASE}/`,
   `${BASE}/index.html`,
-  `${BASE}/manifest.json`,
-  `${BASE}/notify.mp3`,
+  `${BASE}/manifest.json`, 
   `${BASE}/img/user1.jpg`,
   `${BASE}/img/user2.jpg`,
   `${BASE}/img/logo192.jpeg`,

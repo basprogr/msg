@@ -37,8 +37,29 @@
     html, body { max-width: 100%; overflow-x: hidden;}
     button {border: none;}
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;}
-    body { background-color: #efeae2; color: #111b21; height: 100dvh; width: 100vw; display: flex; justify-content: center; align-items: center; overflow: hidden; } 
-    .chat-container { width: 100%; max-width: 900px; height: 100dvh; background-color: #efeae2; display: flex; flex-direction: column; position: relative; box-shadow: 0 6px 18px rgba(11,20,26,0.05);}
+    /* body { background-color: #d1d7db; color: #111b21; height: 100vh; display: flex; justify-content: center; align-items: center;}
+    .chat-container { width: 100%; max-width: 900px; height: 100dvh; background-color: #efeae2; display: flex; flex-direction: column; position: relative; box-shadow: 0 6px 18px rgba(11,20,26,0.05);} */
+    body { 
+  background-color: #efeae2; /* Ubah warna background luar agar sama dengan chat, atau biarkan jika ingin tetap abu-abu */
+  color: #111b21; 
+  height: 100dvh; 
+  width: 100vw;
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  overflow: hidden; 
+}
+
+.chat-container { 
+  width: 100%; 
+  max-width: 900px; 
+  height: 100dvh; /* Pastikan ini tetap 100dvh */
+  background-color: #efeae2; 
+  display: flex; 
+  flex-direction: column; 
+  position: relative; 
+  box-shadow: 0 6px 18px rgba(11,20,26,0.05);
+}
     .chat-header {width: 100%; background-color: #f0f2f5; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e9edef;}
     .chat-header h4 {  color: #485055;}
     .chat-header p { font-size: 12px; color: #667781;}
@@ -52,7 +73,9 @@
     .reply-context .reply-user { font-weight: bold; color: #008069;}
     .message-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 2px;}
     .message-time { font-size: 10px; color: #667781;}
-    .action-btn { background: none; border: none; color: #667781; cursor: pointer; font-size: 11px;} 
+    .action-btn { background: none; border: none; color: #667781; cursor: pointer; font-size: 11px;}
+    .action-btn:hover { color: #111b21;}
+    .action-btn.delete:hover { color: #ea0038;}
     .reply-preview { background-color: #f0f2f5; padding: 8px 16px; display: none; justify-content: space-between; align-items: center; border-left: 4px solid #00a884; font-size: 13px;}
     .reply-preview.active { display: flex;}
     .reply-preview-close { cursor: pointer; color: #667781; font-size: 16px;}
@@ -119,9 +142,13 @@
   </div>
 
   <script>  
+    // localhost/link-apk/index.html?sbu=qjwmhtnfowkmwoflwhzy&sba=sb_publishable_-vCSXzmIWSM9kn7VHWRhjg_g2B5IYXF&r=oNVbmxMLxvsQpAke&u=dalq
+  
     const SUPABASE_URL = `https://${sbu}.supabase.co`;
     const SUPABASE_ANON_KEY = sba; 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);  
+
+    const notifySound = new Audio("notify.mp3");
       
     let selectedReplyId = null;
     let messagesCache = {}; 
@@ -537,6 +564,11 @@
             filter: `room_id=eq.${roomId}`,
           },
           async (payload) => {
+            if (payload.new.user_name !== user) {
+              notifySound.currentTime = 0;
+              notifySound.play().catch(err => console.log("Gagal memutar audio:", err));
+            }
+    
             await detectTarget();
 
             if (payload.new.reply_to_id) {
@@ -612,7 +644,7 @@
 
     init();
 
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then((reg) => {
@@ -624,71 +656,82 @@
       });
     }
  
-    const PUBLIC_VAPID_KEY = 'BM8jpyv89xO3wCEPeYDDWLUKHVh6bOmPaMhBjQ7Dw5374kylLozx63AEOpoP2RI1kIVCjlo4_p7VW0Zen7ljhhQ';
+// 2. Public VAPID Key yang sudah kamu miliki
+const PUBLIC_VAPID_KEY = 'BM8jpyv89xO3wCEPeYDDWLUKHVh6bOmPaMhBjQ7Dw5374kylLozx63AEOpoP2RI1kIVCjlo4_p7VW0Zen7ljhhQ';
 
-    function urlBase64ToUint8Array(base64String) {
-      const padding = '='.repeat((4 - base64String.length % 4) % 4);
-      const base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
+// 3. Fungsi pembantu (helper) untuk konversi VAPID key
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
 
-      const rawData = window.atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
 
-      for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-      }
-      return outputArray;
-    }
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
-    async function requestNotificationPermission() {
-      console.log("Tombol diklik, memproses izin notifikasi...");
+// 4. Fungsi Utama yang dipanggil saat tombol diklik
+async function requestNotificationPermission() {
+  console.log("Tombol diklik, memproses izin notifikasi...");
 
-      if (!('Notification' in window)) {
-        alert('Browser ini tidak mendukung desktop notification.');
-        return;
-      }
+  if (!('Notification' in window)) {
+    alert('Browser ini tidak mendukung desktop notification.');
+    return;
+  }
 
-      try {
-        const permission = await Notification.requestPermission();
-        console.log("Status izin:", permission);
-        
-        if (permission === 'granted') {
-          console.log('Izin notifikasi diberikan oleh pengguna.');
-          
-          const registration = await navigator.serviceWorker.ready;
-          
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
-          });
+  try {
+    // Minta izin ke pengguna
+    const permission = await Notification.requestPermission();
+    console.log("Status izin:", permission);
+    
+    if (permission === 'granted') {
+      console.log('Izin notifikasi diberikan oleh pengguna.');
+      
+      // Pastikan Service Worker siap
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Lakukan subscribe ke PushManager browser
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+      });
 
-          console.log('Push Subscription berhasil didapat:', JSON.stringify(subscription)); 
-          const { data, error } = await supabaseClient
-            .from('push_subscriptions')
-            .insert([
-              { 
-                user_id: user,  
-                subscription: subscription 
-              }
-            ]);
-
-          if (error) {
-            console.error('Gagal menyimpan ke Supabase:', error);
-            alert('Gagal menyimpan izin notifikasi ke database: ' + error.message);
-          } else {
-            console.log('Subscription berhasil disimpan ke Supabase!', data);
-            alert('Notifikasi berhasil diaktifkan dan tersimpan!');
+      console.log('Push Subscription berhasil didapat:', JSON.stringify(subscription)); 
+      const { data, error } = await supabaseClient
+        .from('push_subscriptions')
+        .insert([
+          { 
+            user_id: user,  
+            subscription: subscription 
           }
-          
-        } else {
-          alert('Izin notifikasi ditolak oleh pengguna.');
-        }
-      } catch (err) {
-        console.error('Terjadi error saat proses subscription:', err);
-        alert('Terjadi kesalahan: ' + err.message);
+        ]);
+
+      if (error) {
+        console.error('Gagal menyimpan ke Supabase:', error);
+        alert('Gagal menyimpan izin notifikasi ke database: ' + error.message);
+      } else {
+        console.log('Subscription berhasil disimpan ke Supabase!', data);
+        alert('Notifikasi berhasil diaktifkan dan tersimpan!');
       }
+      
+    } else {
+      alert('Izin notifikasi ditolak oleh pengguna.');
     }
+  } catch (err) {
+    console.error('Terjadi error saat proses subscription:', err);
+    alert('Terjadi kesalahan: ' + err.message);
+  }
+}
+    
+
+
+
+
   </script>
 </body>
 </html>
