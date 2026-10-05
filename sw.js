@@ -1,13 +1,34 @@
 const CACHE_NAME = 'link-pwa';
+
+// Mendeteksi base path secara otomatis (mendukung /link-apk di localhost maupun GitHub Pages)
+const getBasePath = () => {
+  const pathname = self.location.pathname;
+  const pathSegments = pathname.split('/').filter(Boolean);
+  
+  // Jika di localhost dengan subfolder (misal /link-apk/)
+  if (self.location.hostname === 'localhost' && pathSegments.length > 0 && pathSegments[0] !== 'sw.js') {
+    return '/' + pathSegments[0];
+  }
+  
+  // Jika di GitHub Pages atau domain publik dengan subfolder repository
+  if (pathSegments.length > 1) {
+    return '/' + pathSegments[0];
+  }
+  
+  return '';
+};
+
+const BASE = getBasePath();
+
 const ASSETS_TO_CACHE = [
-  '/',
-  './index.html',
-  './manifest.json',
-  './notify.mp3',
-  './img/user1.jpg',
-  './img/user2.jpg',
-  './img/logo192.jpg',
-  './img/logo512.jpg'
+  `${BASE}/`,
+  `${BASE}/index.html`,
+  `${BASE}/manifest.json`,
+  `${BASE}/notify.mp3`,
+  `${BASE}/img/user1.jpg`,
+  `${BASE}/img/user2.jpg`,
+  `${BASE}/img/logo192.jpeg`,
+  `${BASE}/img/logo512.jpeg`
 ];
 
 // Install Service Worker dan cache semua aset utama
@@ -40,7 +61,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Lewati request non-GET atau request ke eksternal (seperti Supabase / OneSignal)
+  // Lewati request non-GET atau request ke eksternal (seperti Supabase)
   if (event.request.method !== 'GET' || url.origin !== location.origin) {
     return;
   }
@@ -48,7 +69,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Ambil dari cache, tapi update cache di background (stale-while-revalidate ringan)
+        // Update cache di background
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {
@@ -62,20 +83,18 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request).then((networkResponse) => {
         return networkResponse;
       }).catch(() => {
-        // Fallback opsional jika offline total dan halaman tidak ada di cache
+        // Fallback jika offline total
         if (event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('/index.html');
+          return caches.match(`${BASE}/index.html`);
         }
       });
     })
   );
 });
-
-// --- TAMBAHAN UNTUK WEB PUSH NOTIFICATION ---
-
-// Menangkap event push dari server / Supabase
+  
+// Menangkap event push dari Supabase
 self.addEventListener('push', (event) => {
-  let data = { title: 'Pesan Baru', body: 'Kamu mendapat pesan baru!' };
+  let data = { title: 'title', body: 'body' };
   
   if (event.data) {
     try {
@@ -84,13 +103,14 @@ self.addEventListener('push', (event) => {
       data.body = event.data.text();
     }
   }
-
+ 
   const options = {
     body: data.body,
-    icon: './img/logo192.jpg',
-    badge: './img/logo192.jpg',
-    vibrate: [200, 100, 200],
-    data: { url: data.url || '/' }
+    badge: `${BASE}/img/logo192.jpg`, 
+    vibrate: [200, 100, 200], 
+    tag: 'link-notification',         
+    renotify: true,
+    data: { url: data.url || `${BASE}/` } 
   };
 
   event.waitUntil(
