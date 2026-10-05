@@ -1,19 +1,19 @@
 {
   "name": "Link",
   "short_name": "Link",
-  "start_url": "/msg/",
-  "scope": "/msg/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#efeae2",
   "theme_color": "#00a884",
   "icons": [
     {
-      "src": "/img/logo192.jpeg",
+      "src": "./img/logo192.jpeg",
       "sizes": "192x192",
       "type": "image/jpeg"
     },
     {
-      "src": "/img/logo512.jpeg",
+      "src": "./img/logo512.jpeg",
       "sizes": "512x512",
       "type": "image/jpeg"
     }
