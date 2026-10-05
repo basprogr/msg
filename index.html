@@ -625,8 +625,7 @@
       });
     }
  
-    const PUBLIC_VAPID_KEY = 'BM8jpyv89xO3wCEPeYDDWLUKHVh6bOmPaMhBjQ7Dw5374kylLozx63AEOpoP2RI1kIVCjlo4_p7VW0Zen7ljhhQ';
-
+    const PUBLIC_VAPID_KEY = 'BM8jpyv89xO3wCEPeYDDWLUKHVh6bOmPaMhBjQ7Dw5374kylLozx63AEOpoP2RI1kIVCjlo4_p7VW0Zen7ljhhQ'; 
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
       const base64 = (base64String + padding)
@@ -642,29 +641,20 @@
       return outputArray;
     }
 
-    async function requestNotificationPermission() {
-      console.log("Tombol diklik, memproses izin notifikasi...");
-
+    async function requestNotificationPermission() { 
       if (!('Notification' in window)) {
         alert('Browser ini tidak mendukung desktop notification.');
         return;
       }
 
       try {
-        const permission = await Notification.requestPermission();
-        console.log("Status izin:", permission);
-        
-        if (permission === 'granted') {
-          console.log('Izin notifikasi diberikan oleh pengguna.');
-          
-          const registration = await navigator.serviceWorker.ready;
-          
+        const permission = await Notification.requestPermission();  
+        if (permission === 'granted') { 
+          const registration = await navigator.serviceWorker.ready; 
           const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
-          });
-
-          console.log('Push Subscription berhasil didapat:', JSON.stringify(subscription)); 
+          }); 
           const { data, error } = await supabaseClient
             .from('push_subscriptions')
             .insert([
@@ -672,21 +662,16 @@
                 user_id: user,  
                 subscription: subscription 
               }
-            ]);
-
-          if (error) {
-            console.error('Gagal menyimpan ke Supabase:', error);
+            ]); 
+          if (error) { 
             alert('Gagal menyimpan izin notifikasi ke database: ' + error.message);
-          } else {
-            console.log('Subscription berhasil disimpan ke Supabase!', data);
+          } else { 
             alert('Notifikasi berhasil diaktifkan dan tersimpan!');
-          }
-          
+          } 
         } else {
           alert('Izin notifikasi ditolak oleh pengguna.');
         }
-      } catch (err) {
-        console.error('Terjadi error saat proses subscription:', err);
+      } catch (err) { 
         alert('Terjadi kesalahan: ' + err.message);
       }
     }

@@ -1,24 +1,17 @@
-const CACHE_NAME = 'link-pwa';
- 
+const CACHE_NAME = 'link-pwa'; 
 const getBasePath = () => {
   const pathname = self.location.pathname;
   const pathSegments = pathname.split('/').filter(Boolean);
-  
-  // Jika di localhost dengan subfolder (misal /link-apk/)
   if (self.location.hostname === 'localhost' && pathSegments.length > 0 && pathSegments[0] !== 'sw.js') {
     return '/' + pathSegments[0];
-  }
-  
-  // Jika di GitHub Pages atau domain publik dengan subfolder repository
+  } 
   if (pathSegments.length > 1) {
     return '/' + pathSegments[0];
-  }
-  
+  } 
   return '';
 };
 
-const BASE = getBasePath();
-
+const BASE = getBasePath(); 
 const ASSETS_TO_CACHE = [
   `${BASE}/`,
   `${BASE}/index.html`,
@@ -28,8 +21,7 @@ const ASSETS_TO_CACHE = [
   `${BASE}/img/logo192.jpeg`,
   `${BASE}/img/logo512.jpeg`
 ];
-
-// Install Service Worker dan cache semua aset utama
+ 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -38,8 +30,7 @@ self.addEventListener('install', (event) => {
   );
   self.skipWaiting();
 });
-
-// Aktivasi dan bersihkan cache lama jika ada pembaruan
+ 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -54,16 +45,12 @@ self.addEventListener('activate', (event) => {
   );
   self.clients.claim();
 });
-
-// Strategi Fetch: Network-first untuk API/Supabase, Cache-first untuk aset statis
+ 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  
-  // Lewati request non-GET atau request ke eksternal (seperti Supabase)
+  const url = new URL(event.request.url); 
   if (event.request.method !== 'GET' || url.origin !== location.origin) {
     return;
-  }
-
+  } 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -89,8 +76,7 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-  
-// Menangkap event push dari Supabase
+   
 self.addEventListener('push', (event) => {
   let data = { title: 'title', body: 'body' };
   
@@ -100,8 +86,7 @@ self.addEventListener('push', (event) => {
     } catch (e) {
       data.body = event.data.text();
     }
-  }
- 
+  } 
   const options = {
     body: data.body,
     badge: `${BASE}/img/logo192.jpg`, 
@@ -115,8 +100,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(data.title, options)
   );
 });
-
-// Aksi ketika notifikasi diklik oleh user
+ 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
