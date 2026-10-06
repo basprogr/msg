@@ -91,7 +91,7 @@
             </div>
           </div>
           <button onclick="requestNotificationPermission()">
-            <svg style="width: 20px; height: 20px; fill: #54656f;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M176 544C96.5 544 32 479.5 32 400C32 336.6 73 282.8 129.9 263.5C128.6 255.8 128 248 128 240C128 160.5 192.5 96 272 96C327.4 96 375.5 127.3 399.6 173.1C413.8 164.8 430.4 160 448 160C501 160 544 203 544 256C544 271.7 540.2 286.6 533.5 299.7C577.5 320 608 364.4 608 416C608 486.7 550.7 544 480 544L176 544zM409 377C418.4 367.6 418.4 352.4 409 343.1C399.6 333.8 384.4 333.7 375.1 343.1L344.1 374.1L344.1 272C344.1 258.7 333.4 248 320.1 248C306.8 248 296.1 258.7 296.1 272L296.1 374.1L265.1 343.1C255.7 333.7 240.5 333.7 231.2 343.1C221.9 352.5 221.8 367.7 231.2 377L303.2 449C312.6 458.4 327.8 458.4 337.1 449L409.1 377z"/></svg>
+            <svg id="notification-icon" style="width: 20px; height: 20px; fill: #54656f;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 64C302.3 64 288 78.3 288 96L288 99.2C215 114 160 178.6 160 256L160 277.7C160 325.8 143.6 372.5 113.6 410.1L103.8 422.3C98.7 428.6 96 436.4 96 444.5C96 464.1 111.9 480 131.5 480L508.4 480C528 480 543.9 464.1 543.9 444.5C543.9 436.4 541.2 428.6 536.1 422.3L526.3 410.1C496.4 372.5 480 325.8 480 277.7L480 256C480 178.6 425 114 352 99.2L352 96C352 78.3 337.7 64 320 64zM258 528C265.1 555.6 290.2 576 320 576C349.8 576 374.9 555.6 382 528L258 528z"/></svg>
           </button>
     </div>
 
@@ -108,7 +108,7 @@
     <form id="chat-form" class="chat-input-container"> 
       <input type="file" id="media-input" accept="image/*,video/*" style="display: none;"> 
       <button type="button" id="attach-btn" title="Kirim Gambar/Video" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center;">
-        <svg style="width: 20px; height: 20px; fill: #54656f;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M304 112L192 112C183.2 112 176 119.2 176 128L176 512C176 520.8 183.2 528 192 528L448 528C456.8 528 464 520.8 464 512L464 272L376 272C336.2 272 304 239.8 304 200L304 112zM444.1 224L352 131.9L352 200C352 213.3 362.7 224 376 224L444.1 224zM128 128C128 92.7 156.7 64 192 64L325.5 64C342.5 64 358.8 70.7 370.8 82.7L493.3 205.3C505.3 217.3 512 233.6 512 250.6L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 128zM387.4 496L252.6 496C236.8 496 224 483.2 224 467.4C224 461 226.1 454.9 230 449.8L297.6 362.9C303 356 311.3 352 320 352C328.7 352 337 356 342.4 362.9L410 449.9C413.9 454.9 416 461.1 416 467.5C416 483.3 403.2 496.1 387.4 496.1zM240 288C257.7 288 272 302.3 272 320C272 337.7 257.7 352 240 352C222.3 352 208 337.7 208 320C208 302.3 222.3 288 240 288z"/></svg>
+        <svg style="width: 30px; height: 30px; fill: #54656f;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M304 112L192 112C183.2 112 176 119.2 176 128L176 512C176 520.8 183.2 528 192 528L448 528C456.8 528 464 520.8 464 512L464 272L376 272C336.2 272 304 239.8 304 200L304 112zM444.1 224L352 131.9L352 200C352 213.3 362.7 224 376 224L444.1 224zM128 128C128 92.7 156.7 64 192 64L325.5 64C342.5 64 358.8 70.7 370.8 82.7L493.3 205.3C505.3 217.3 512 233.6 512 250.6L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 128zM387.4 496L252.6 496C236.8 496 224 483.2 224 467.4C224 461 226.1 454.9 230 449.8L297.6 362.9C303 356 311.3 352 320 352C328.7 352 337 356 342.4 362.9L410 449.9C413.9 454.9 416 461.1 416 467.5C416 483.3 403.2 496.1 387.4 496.1zM240 288C257.7 288 272 302.3 272 320C272 337.7 257.7 352 240 352C222.3 352 208 337.7 208 320C208 302.3 222.3 288 240 288z"/></svg>
       </button>  
       <input type="text" id="message-input" placeholder="Ketik pesan" autocomplete="off">
  
@@ -428,7 +428,7 @@
       const { error } = await supabaseClient.from("messages").insert([payload]);
 
       if (error) {
-        console.error("Gagal mengirim pesan:", error);
+        console.log(error);
       } else {
         await detectTarget();
         await logUserAccess();
@@ -619,7 +619,7 @@
             console.log('Service Worker berhasil didaftarkan scope:', reg.scope);
           })
           .catch((err) => {
-            console.error('Gagal mendaftarkan Service Worker:', err);
+            console.error(err);
           });
       });
     }
@@ -642,7 +642,7 @@
 
     async function requestNotificationPermission() { 
       if (!('Notification' in window)) {
-        alert('Browser ini tidak mendukung desktop notification.');
+        alert('Notification is not supported');
         return;
       }
 
@@ -663,15 +663,16 @@
               }
             ]); 
           if (error) { 
-            alert('Gagal menyimpan izin notifikasi ke database: ' + error.message);
+            alert(error.message);
           } else { 
-            alert('Notifikasi berhasil diaktifkan dan tersimpan!');
+            alert('Notification granted'); 
+            document.getElementById('notification-icon').style.fill = '#ffd53d';
           } 
         } else {
-          alert('Izin notifikasi ditolak oleh pengguna.');
+          alert('Notificatin blocked');
         }
       } catch (err) { 
-        alert('Terjadi kesalahan: ' + err.message);
+        alert(err.message);
       }
     }
   </script>
