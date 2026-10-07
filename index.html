@@ -3,23 +3,23 @@
 <head>  
   <script> 
     const urlParams = new URLSearchParams(window.location.search);
-    let sbu = urlParams.get("sbu"); 
-    let sba = urlParams.get("sba");
-    let user = urlParams.get("u"); 
+    let su = urlParams.get("su"); 
+    let sa = urlParams.get("sa");
     let roomId = urlParams.get("r");  
+    let user = urlParams.get("u"); 
 
-    if (sbu || sba || user || roomId) { 
-      if (sbu) localStorage.setItem("pwa_sbu", sbu);
-      if (sba) localStorage.setItem("pwa_sba", sba);
+    if (su || sa || user || roomId) { 
+      if (su) localStorage.setItem("pwa_su", su);
+      if (sa) localStorage.setItem("pwa_sa", sa);
       if (user) localStorage.setItem("pwa_user", user);
       if (roomId) localStorage.setItem("pwa_roomId", roomId);
     } else { 
-      sbu = localStorage.getItem("pwa_sbu");
-      sba = localStorage.getItem("pwa_sba");
+      su = localStorage.getItem("pwa_su");
+      sa = localStorage.getItem("pwa_sa");
       user = localStorage.getItem("pwa_user");
       roomId = localStorage.getItem("pwa_roomId");
     } 
-    if (!sbu || !sba || !roomId || !user) {
+    if (!su || !sa || !roomId || !user) {
       window.location.href = "https://example.com";
     } 
   </script>
@@ -119,9 +119,9 @@
   </div>
 
   <script>  
-    const SUPABASE_URL = `https://${sbu}.supabase.co`;
-    const SUPABASE_ANON_KEY = sba; 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);  
+    const supabaseURL = `https://${su}.supabase.co`;
+    const supabaseAnonim = sa; 
+    const supabaseClient = window.supabase.createClient(supabaseURL, supabaseAnonim);  
       
     let selectedReplyId = null;
     let messagesCache = {}; 
@@ -145,13 +145,7 @@
     
     let targetName = "default";
     let profileImgUrl = "default.jpg";
-    
-    if (!user || !roomId) {
-      document.addEventListener("DOMContentLoaded", () => {
-        showError("Akses ditolak: Parameter URL tidak lengkap.");
-      });
-    } 
-    
+     
     async function detectTarget() {
       const { data } = await supabaseClient
         .from("messages")
@@ -175,19 +169,13 @@
       }
     }); 
 
-    async function init() {
-      if (!roomId || !user) {
-        showError("Invalid URL");
-        return;
-      } 
-
+    async function init() { 
       const { data: rooms, error } = await supabaseClient
         .from("rooms")
         .select("id")
-        .eq("id", roomId); 
-
+        .eq("id", roomId);  
       if (error || !rooms || rooms.length === 0) {
-        showError("Room chat tidak ditemukan atau belum terdaftar di database.");
+        showError("Room not found");
         return;
       } 
 
@@ -237,15 +225,13 @@
       const { data, error } = await supabaseClient
         .from("user_logs")
         .select("user_name, last_seen")
-        .eq("room_id", roomId);
-
+        .eq("room_id", roomId); 
       if (error) {
-        console.error("Gagal mengambil log user:", error);
+        console.log(error);
         return;
       }
 
-      userLogsContainer.innerHTML = "";
-
+      userLogsContainer.innerHTML = ""; 
       const targetLog = data.find(log => log.user_name === targetName);
 
       if (targetLog) {
@@ -255,58 +241,40 @@
           <span>${timeStr}</span>
         `;
       } else {
-        userLogsContainer.innerHTML = `<span>Menunggu...</span>`;
+        userLogsContainer.innerHTML = `<span>Waiting...</span>`;
       }
     }
 
     function formatLastSeen(dateString) {
       const date = new Date(dateString);
       const now = new Date();
-      const diffInMinutes = Math.floor((now - date) / 60000);
-
+      const diffInMinutes = Math.floor((now - date) / 60000); 
       if (diffInMinutes < 1) return "Baru saja";
-      if (diffInMinutes < 60) return `${diffInMinutes} mnt lalu`;
-      
+      if (diffInMinutes < 60) return `${diffInMinutes} mnt lalu`; 
       return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
     async function fetchMessages() {
       const { data, error } = await supabaseClient
         .from("messages")
-        .select(`
-          id,
-          room_id,
-          user_name,
-          content,
-          created_at,
-          reply_to_id,
-          file_url,
-          file_type,
-          parent:reply_to_id ( user_name, content )
-        `)
+        .select(`id, room_id, user_name, content, created_at, reply_to_id, file_url, file_type, parent:reply_to_id ( user_name, content )`)
         .eq("room_id", roomId)
         .order("created_at", { ascending: false })
-        .limit(50);
-
+        .limit(50); 
       if (error) {
-        console.error("Gagal mengambil pesan:", error);
+        console.log(error);
         return;
-      }
-
-      data.reverse();
-
+      } 
+      data.reverse(); 
       chatBox.innerHTML = "";
-      messagesCache = {}; 
-      
+      messagesCache = {};  
       if (data.length > 0) {
         oldestMessageTime = data[0].created_at; 
-      }
-
+      } 
       data.forEach((msg) => {
         messagesCache[msg.id] = msg; 
         renderMessage(msg, "bottom");
-      });
-      
+      }); 
       scrollToBottom();
     }
 
@@ -318,40 +286,25 @@
 
       const { data, error } = await supabaseClient
         .from("messages")
-        .select(`
-          id,
-          room_id,
-          user_name,
-          content,
-          created_at,
-          reply_to_id,
-          file_url,
-          file_type,
-          parent:reply_to_id ( user_name, content )
-        `)
+        .select(`id, room_id, user_name, content, created_at, reply_to_id, file_url, file_type, parent:reply_to_id ( user_name, content )`)
         .eq("room_id", roomId)
         .lt("created_at", oldestMessageTime)
         .order("created_at", { ascending: false })
-        .limit(20);
-
+        .limit(20); 
       if (error) {
-        console.error("Gagal memuat pesan lama:", error);
+        console.log(error);
         isLoadingMore = false;
         return;
-      }
-
+      } 
       if (data && data.length > 0) {
         data.reverse();
-        oldestMessageTime = data[0].created_at; 
-
+        oldestMessageTime = data[0].created_at;  
         data.forEach((msg) => {
           messagesCache[msg.id] = msg;
           renderMessage(msg, "top"); 
-        });
-
+        }); 
         chatBox.scrollTop = chatBox.scrollHeight - previousHeight;
-      }
-
+      } 
       isLoadingMore = false;
     }
 
@@ -469,7 +422,7 @@
         .upload(filePath, fileToUpload);
 
       if (uploadError) {
-        alert('Gagal mengunggah file: ' + uploadError.message);
+        alert(uploadError.message);
         return;
       }
 
@@ -502,10 +455,9 @@
         .from("messages")
         .delete()
         .eq("id", msgId)
-        .eq("user_name", user);
-
+        .eq("user_name", user); 
       if (error) {
-        console.error("Gagal menghapus pesan:", error);
+        console.log(error);
       }
     }
 
@@ -542,20 +494,9 @@
             if (payload.new.reply_to_id) {
               const { data: fullMsg } = await supabaseClient
                 .from("messages")
-                .select(`
-                  id,
-                  room_id,
-                  user_name,
-                  content,
-                  created_at,
-                  reply_to_id,
-                  file_url,
-                  file_type,
-                  parent:reply_to_id ( user_name, content )
-                `)
+                .select(`id, room_id, user_name, content, created_at, reply_to_id, file_url, file_type, parent:reply_to_id ( user_name, content )`)
                 .eq("id", payload.new.id)
-                .single();
-
+                .single(); 
               if (fullMsg) {
                 renderMessage(fullMsg, "bottom");
               } else {
@@ -563,8 +504,7 @@
               }
             } else {
               renderMessage(payload.new, "bottom");
-            }
-
+            } 
             scrollToBottom();
           }
         )
@@ -594,8 +534,7 @@
           }
         )
         .subscribe();
-    }
-
+    } 
     function scrollToBottom() {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -608,8 +547,7 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-    }
-
+    } 
     init();
 
     if ('serviceWorker' in navigator && 'PushManager' in window) {
@@ -622,8 +560,7 @@
             console.error(err);
           });
       });
-    }
- 
+    } 
     const PUBLIC_VAPID_KEY = 'BM8jpyv89xO3wCEPeYDDWLUKHVh6bOmPaMhBjQ7Dw5374kylLozx63AEOpoP2RI1kIVCjlo4_p7VW0Zen7ljhhQ'; 
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
