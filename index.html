@@ -5,25 +5,27 @@
     const urlParams = new URLSearchParams(window.location.search);
     let su = urlParams.get("su"); 
     let sa = urlParams.get("sa");
+    let vapid = urlParams.get("vapid");  
     let roomId = urlParams.get("r");  
     let user = urlParams.get("u"); 
 
-    if (su || sa || user || roomId) { 
+    if (su || sa || vapid || user || roomId) { 
       if (su) localStorage.setItem("pwa_su", su);
       if (sa) localStorage.setItem("pwa_sa", sa);
+        if (vapid) localStorage.setItem("pwa_vapid", vapid);
       if (user) localStorage.setItem("pwa_user", user);
       if (roomId) localStorage.setItem("pwa_roomId", roomId);
     } else { 
       su = localStorage.getItem("pwa_su");
       sa = localStorage.getItem("pwa_sa");
+      vapid = localStorage.getItem("pwa_vapid");
       user = localStorage.getItem("pwa_user");
       roomId = localStorage.getItem("pwa_roomId");
     } 
-    if (!su || !sa || !roomId || !user) {
+    if (!su || !sa || !vapid || !roomId || !user) {
       window.location.href = "https://example.com";
     } 
-  </script>
-
+  </script> 
   <meta charset="UTF-8">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#00a884"> 
