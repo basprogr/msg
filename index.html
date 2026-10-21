@@ -331,17 +331,68 @@
         return;
       } 
 
-      if (data && data.length > 0) { 
-        const firstElement = chatBox.firstChild; 
-        for (let i = data.length - 1; i >= 0; i--) {
-          const msg = data[i];
-          messagesCache[msg.id] = msg; 
-          if (i === data.length - 1) {
-            oldestMessageTime = msg.created_at;
-          } 
-          const msgEl = createMessageElement(msg); 
-          chatBox.insertBefore(msgEl, chatBox.firstChild);
-        } 
+      if (data && data.length > 0) {
+        // Balik urutan agar yang paling tua ada di awal array (indeks 0)
+        data.reverse();
+        oldestMessageTime = data[0].created_at; // Update ke pesan paling tua
+
+        // Simpan elemen pertama saat ini sebagai titik acuan sisip
+        let referenceNode = chatBox.firstChild;
+
+        data.forEach((msg) => {
+          messagesCache[msg.id] = msg;
+          
+          // Buat elemen menggunakan renderMessage logika internal atau buat manual
+          // Cara paling aman dengan fungsi renderMessage yang sudah ada:
+          const isSentByMe = msg.user_name === user;
+          const msgEl = document.createElement("div");
+          msgEl.className = `message ${isSentByMe ? "sent" : "received"}`;
+          msgEl.id = `msg-${msg.id}`;
+
+          const timeStr = new Date(msg.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          let replyHTML = "";
+          if (msg.parent) {
+            replyHTML = `
+              <div class="reply-context">
+                <span class="reply-user">${escapeHtml(msg.parent.user_name)}</span>
+                <div>${escapeHtml(msg.parent.content)}</div>
+              </div>
+            `;
+          }
+        
+          let mediaHTML = "";
+          if (msg.file_url) {
+            if (msg.file_type === 'image') {
+              mediaHTML = `<img src="${msg.file_url}" style="max-width: 100%; border-radius: 6px; margin-top: 4px; cursor: pointer;" onclick="window.open('${msg.file_url}', '_blank')">`;
+            } else if (msg.file_type === 'video') {
+              mediaHTML = `<video src="${msg.file_url}" controls style="max-width: 100%; border-radius: 6px; margin-top: 4px;"></video>`;
+            }
+          }
+
+          let deleteBtn = "";
+          if (isSentByMe) {
+            deleteBtn = `<button class="action-btn delete" onclick="deleteMessage(${msg.id})">Hapus</button>`;
+          }
+
+          msgEl.innerHTML = `
+            <span class="message-user">${escapeHtml(msg.user_name)}</span>
+            ${replyHTML}
+            ${mediaHTML}
+            ${msg.content ? `<div>${escapeHtml(msg.content)}</div>` : ''}
+            <div class="message-footer">
+              <span class="message-time">${timeStr}</span>
+              <button class="action-btn" onclick="triggerReply(${msg.id})">Balas</button>
+              ${deleteBtn}
+            </div>
+          `;
+
+          // Masukkan tepat sebelum elemen acuan lama supaya urutannya mengalir ke bawah
+          chatBox.insertBefore(msgEl, referenceNode);
+        }); 
 
         chatBox.scrollTop = chatBox.scrollHeight - previousHeight;
       } 
