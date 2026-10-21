@@ -281,6 +281,36 @@
       scrollToBottom();
     }
 
+    // async function loadMoreMessages() {
+    //   if (isLoadingMore || !oldestMessageTime) return;
+    //   isLoadingMore = true;
+
+    //   const previousHeight = chatBox.scrollHeight;
+
+    //   const { data, error } = await supabaseClient
+    //     .from("messages")
+    //     .select(`id, room_id, user_name, content, created_at, reply_to_id, file_url, file_type, parent:reply_to_id ( user_name, content )`)
+    //     .eq("room_id", roomId)
+    //     .lt("created_at", oldestMessageTime)
+    //     .order("created_at", { ascending: false })
+    //     .limit(20); 
+    //   if (error) {
+    //     console.log(error);
+    //     isLoadingMore = false;
+    //     return;
+    //   } 
+    //   if (data && data.length > 0) {
+    //     data.reverse();
+    //     oldestMessageTime = data[0].created_at;  
+    //     data.forEach((msg) => {
+    //       messagesCache[msg.id] = msg;
+    //       renderMessage(msg, "top"); 
+    //     }); 
+    //     chatBox.scrollTop = chatBox.scrollHeight - previousHeight;
+    //   } 
+    //   isLoadingMore = false;
+    // }
+
     async function loadMoreMessages() {
       if (isLoadingMore || !oldestMessageTime) return;
       isLoadingMore = true;
@@ -294,18 +324,25 @@
         .lt("created_at", oldestMessageTime)
         .order("created_at", { ascending: false })
         .limit(20); 
+
       if (error) {
         console.log(error);
         isLoadingMore = false;
         return;
       } 
-      if (data && data.length > 0) {
-        data.reverse();
-        oldestMessageTime = data[0].created_at;  
-        data.forEach((msg) => {
-          messagesCache[msg.id] = msg;
-          renderMessage(msg, "top"); 
-        }); 
+
+      if (data && data.length > 0) { 
+        const firstElement = chatBox.firstChild; 
+        for (let i = data.length - 1; i >= 0; i--) {
+          const msg = data[i];
+          messagesCache[msg.id] = msg; 
+          if (i === data.length - 1) {
+            oldestMessageTime = msg.created_at;
+          } 
+          const msgEl = createMessageElement(msg); 
+          chatBox.insertBefore(msgEl, chatBox.firstChild);
+        } 
+
         chatBox.scrollTop = chatBox.scrollHeight - previousHeight;
       } 
       isLoadingMore = false;
@@ -379,10 +416,8 @@
       };
 
       messageInput.value = "";
-      cancelReply();
-
-      const { error } = await supabaseClient.from("messages").insert([payload]);
-
+      cancelReply(); 
+      const { error } = await supabaseClient.from("messages").insert([payload]); 
       if (error) {
         console.log(error);
       } else {
@@ -418,8 +453,7 @@
 
       const fileExt = fileToUpload.name ? fileToUpload.name.split('.').pop() : (isVideo ? 'mp4' : 'jpg');
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `uploads/${fileName}`;
-
+      const filePath = `uploads/${fileName}`; 
       const { error: uploadError } = await supabaseClient.storage
         .from('chat-files')
         .upload(filePath, fileToUpload);
@@ -445,8 +479,7 @@
           file_type: fileType,
           reply_to_id: selectedReplyId
         }
-      ]);
-
+      ]); 
       mediaInput.value = '';
       cancelReply();
       await detectTarget();
@@ -466,8 +499,7 @@
 
     function triggerReply(id) {
       const msg = messagesCache[id];
-      if (!msg) return;
-      
+      if (!msg) return; 
       selectedReplyId = id;
       replyUser.textContent = msg.user_name;
       replyText.textContent = msg.content;
@@ -564,16 +596,14 @@
           });
       });
     } 
-    const PUBLIC_VAPID_KEY = 'BM8jpyv89xO3wCEPeYDDWLUKHVh6bOmPaMhBjQ7Dw5374kylLozx63AEOpoP2RI1kIVCjlo4_p7VW0Zen7ljhhQ'; 
+    
     function urlBase64ToUint8Array(base64String) {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
       const base64 = (base64String + padding)
         .replace(/\-/g, '+')
-        .replace(/_/g, '/');
-
+        .replace(/_/g, '/'); 
       const rawData = window.atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
-
+      const outputArray = new Uint8Array(rawData.length); 
       for (let i = 0; i < rawData.length; ++i) {
         outputArray[i] = rawData.charCodeAt(i);
       }
@@ -584,15 +614,14 @@
       if (!('Notification' in window)) {
         alert('Notification is not supported');
         return;
-      }
-
+      } 
       try {
         const permission = await Notification.requestPermission();  
         if (permission === 'granted') { 
           const registration = await navigator.serviceWorker.ready; 
           const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+            applicationServerKey: urlBase64ToUint8Array(vapid)
           }); 
           const { data, error } = await supabaseClient
             .from('push_subscriptions')
@@ -614,8 +643,7 @@
       } catch (err) { 
         alert(err.message);
       }
-    }
- 
+    } 
     ['click', 'mousemove', 'keydown', 'touchstart'].forEach(eventType => {
         window.addEventListener(eventType, () => {
             if (window.parent !== window) {
